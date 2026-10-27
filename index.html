@@ -123,6 +123,15 @@ input[type=text]{width:100%}
 .confirm{display:flex;gap:8px;align-items:center;font-size:12px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:13px;z-index:30}
 .note{font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tab{font:inherit;font-weight:600;font-size:14px;border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);padding:10px 14px;margin-bottom:-1px;cursor:pointer;text-decoration:none}
+.tab:hover{color:var(--fg)}
+.tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.view{display:grid;gap:22px}
+.rtable{min-width:560px}
+.rtable td{vertical-align:middle}
+.rtable .pill{cursor:default}
+.rtable tfoot td{font-weight:700;background:var(--surface-2);border-bottom:0}
 @media (max-width:560px){h1{font-size:22px}.grid2{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:no-preference){.drawer{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
 </style>
@@ -166,7 +175,29 @@ input[type=text]{width:100%}
     <div class="tools"><button class="btn" id="csvBtn" type="button">Exportar CSV</button><button class="btn" id="jsonBtn" type="button">Exportar JSON</button><label class="btn" for="impFile">Importar JSON</label><input type="file" id="impFile" accept=".json,application/json" hidden><button class="btn" id="resetBtn" type="button">Restablecer</button><button class="btn primary" id="addBtn" type="button">+ Agregar trámite</button></div>
   </header>
 
-  <section class="kpis" id="kpis" aria-label="Resumen"></section>
+  <nav class="tabs" role="tablist" aria-label="Vistas del tablero">
+    <a class="tab" role="tab" href="#detalle" data-view="detalle" aria-selected="true">Detalle</a>
+    <a class="tab" role="tab" href="#resumen" data-view="resumen" aria-selected="false">Resumen</a>
+  </nav>
+
+  <div class="view" id="view-resumen" hidden>
+  <section class="panel">
+    <div class="listhead">
+      <h2 id="resTitle">Resumen de trámites</h2>
+      <div class="filters"><input type="search" id="rq" placeholder="Buscar trámite" aria-label="Buscar trámite"></div>
+    </div>
+    <div class="tablewrap">
+      <table class="rtable">
+        <thead><tr><th>Trámite</th><th class="c">Disponible API IMI</th><th class="c">Funcionando LITO</th><th class="c">Funcionando WEB</th></tr></thead>
+        <tbody id="rbody"></tbody>
+        <tfoot id="rfoot"></tfoot>
+      </table>
+    </div>
+  </section>
+  </div>
+
+  <div class="view" id="view-detalle">
+  <section class="kpis" id="kpis" aria-label="Indicadores"></section>
 
   <section class="panel coverage">
     <h2>Cobertura por fuente</h2>
@@ -191,6 +222,7 @@ input[type=text]{width:100%}
     </div>
     <div class="empty" id="empty" hidden></div>
   </section>
+  </div>
   <p class="note" id="status">Conectando con los datos del tablero…</p>
 </div>
 
@@ -232,7 +264,26 @@ function render(){
     <td><div class="chips">${(r.obs||[]).map(o=>`<span class="chip">${esc(o)}</span>`).join("")}</div></td><td><span class="rev r-${esc(r.revision||"Pendiente")}">${esc(r.revision||"Pendiente")}</span></td></tr>`}).join("");
   const e=$("#empty");e.hidden=v.length>0;e.textContent=rows.length?"Ningún trámite coincide con los filtros.":"Todavía no hay trámites cargados. Usá «Agregar trámite» para sumar el primero.";
   if(selId)renderDrawer();
+  renderResumen();
 }
+
+let rq="";
+function renderResumen(){
+  const yn=v=>v?`<span class="pill p-yes">Sí</span>`:`<span class="pill p-no">No</span>`;
+  let v=rows.slice().sort((a,b)=>(a.orden??999)-(b.orden??999));
+  if(rq){const q=rq.toLowerCase();v=v.filter(r=>[r.nombreWeb,r.nombrePostman,r.tid].join(" ").toLowerCase().includes(q))}
+  $("#resTitle").textContent=`Resumen de trámites (${v.length})`;
+  $("#rbody").innerHTML=v.map(r=>`<tr><td><div class="name">${esc(r.nombreWeb||"—")}</div></td><td class="c">${yn(r.enPostman)}</td><td class="c">${yn(r.lito==="Sí")}</td><td class="c">${yn(r.enWeb)}</td></tr>`).join("")||`<tr><td colspan="4" class="empty">Ningún trámite coincide con la búsqueda.</td></tr>`;
+  const c=f=>v.filter(f).length;
+  $("#rfoot").innerHTML=v.length?`<tr><td>Total</td><td class="c">${c(r=>r.enPostman)} de ${v.length}</td><td class="c">${c(r=>r.lito==="Sí")} de ${v.length}</td><td class="c">${c(r=>r.enWeb)} de ${v.length}</td></tr>`:"";
+}
+$("#rq").addEventListener("input",e=>{rq=e.target.value;renderResumen()});
+function showView(){
+  const name=location.hash==="#resumen"?"resumen":"detalle";
+  document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",String(t.dataset.view===name)));
+  $("#view-resumen").hidden=name!=="resumen";$("#view-detalle").hidden=name!=="detalle";
+}
+window.addEventListener("hashchange",showView);showView();
 
 function renderDrawer(){
   const r=rows.find(x=>x._id===selId);if(!r){closeDrawer();return}
