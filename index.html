@@ -339,7 +339,7 @@ async function start(){
     const local=new Map(rows.map(r=>[r._id,r]));
     rows=snap.docs.map(d=>{const x={...d.data(),_id:d.id};const l=local.get(d.id);
       if(l&&d.id===selId){["nota","nombreWeb","nombrePostman","area","nivelWeb","nivelApi","litoDetalle","tid","estadoWeb"].forEach(f=>{if(timers[d.id+f])x[f]=l[f]})}return x});
-    $("#status").textContent="Los cambios se guardan en este navegador. Usá Exportar JSON para compartirlos e Importar JSON para cargarlos en otro equipo.";
+    $("#status").textContent="";
     render();
   },err=>{$("#status").textContent="Se perdió la conexión con los datos. Recargá la página."});
 }
