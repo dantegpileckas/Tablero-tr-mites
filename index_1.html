@@ -215,7 +215,7 @@ function render(){
   const withObs=rows.filter(r=>(r.obs||[]).length).length,pend=rows.filter(r=>r.revision!=="Resuelto").length;
   const k=[["all",n,"Trámites relevados",null],["3",s3,"En las 3 fuentes","var(--ok)"],["2",s2,"En 2 de 3","var(--warn)"],["1",s1,"En 1 o ninguna","var(--bad)"],["obs",withObs,"Con observaciones","var(--warn)"],["pend",pend,"Revisión abierta","var(--accent)"]];
   $("#kpis").innerHTML=k.map(([id,v,l,c])=>`<button type="button" class="kpi ${filter.score===id||(id==="all"&&!filter.score)?"on":""}" data-f="${id}"><span class="n">${v}</span><span class="l">${c?`<span class="dot" style="background:${c}"></span>`:""}${l}</span></button>`).join("");
-  const src=[["Web (filas 2–17)",r=>r.enWeb?"y":"n"],["Postman / API",r=>r.enPostman?"y":"n"],["LITO MVP1",r=>r.lito==="Sí"?"y":r.lito==="Excluido"?"x":"n"]];
+  const src=[["Web",r=>r.enWeb?"y":"n"],["Postman / API",r=>r.enPostman?"y":"n"],["LITO",r=>r.lito==="Sí"?"y":r.lito==="Excluido"?"x":"n"]];
   $("#srcs").innerHTML=src.map(([t,f])=>{const y=rows.filter(r=>f(r)==="y").length,x=rows.filter(r=>f(r)==="x").length,w=v=>n?(v/n*100):0;
     return `<div class="src"><div class="top"><span>${t}</span><span><b>${y}</b> de ${n}${x?` · <span style="color:var(--bad)">${x} excl.</span>`:""}</span></div><div class="bar"><span style="width:${w(y)}%;background:var(--ok)"></span><span style="width:${w(x)}%;background:var(--bad)"></span></div></div>`}).join("");
   let v=rows.slice();
